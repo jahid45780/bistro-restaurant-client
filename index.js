@@ -4,7 +4,19 @@ const cors = require('cors');
 const app = express()
 require('dotenv').config()
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+const formData = require('form-data');
+const Mailgun = require('mailgun.js');
+const mailgun = new Mailgun(formData);
+
+const mg = mailgun.client({
+	username: 'api',
+	key: process.env.MAIL_GUN_API_KEY,
+});
+
+
 const port = process.env.PORT || 5000
+
+
 
 
 // middleWare
@@ -244,6 +256,28 @@ async function run() {
 
           const deleteResult = await cartsCollection.deleteMany(query)
 
+          // sent user email payment confition
+          mg.messages
+	.create(process.env.MAIL_SENDING_DOMAIN, {
+		from: "Mailgun Sandbox <postmaster@sandboxcd905ad5f321492bbb00402d8295c087.mailgun.org>",
+		to: ["jahidhossain22233@gmail.com"],
+		subject: "bisto boss conf your order",
+		text: "Testing some Mailgun awesomness!",
+    html:`
+    <div> 
+    
+    <h2> thank for your order </h2>
+    <h4> your transaction Id: <strong>${payment.transactionId} </strong> </h4>
+    <p> You can give feedback about our service or food </p>
+    
+    </div>
+    `
+	})
+	.then(msg => console.log(msg)) // logs response data
+	.catch(err => console.log(err)); // logs any error`;
+
+       
+
           res.send({paymentResult, deleteResult})
 
       })
@@ -317,7 +351,7 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
